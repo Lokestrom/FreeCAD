@@ -229,13 +229,9 @@ App::MeasureElementType PartMeasureTypeCb(App::DocumentObject* ob, const char* s
                     return App::MeasureElementType::SPHERE;
                 }
                 case GeomAbs_Plane: {
-                    if (isDatum(subject)) {
-                        return App::MeasureElementType::PLANE;
-                    }
-
                     TopExp_Explorer edges(face, TopAbs_EDGE);
                     if (!edges.More()) {
-                        return App::MeasureElementType::PLANESEGMENT;
+                        return App::MeasureElementType::PLANE;
                     }
                     TopoDS_Edge edge = TopoDS::Edge(edges.Current());
                     edges.Next();
@@ -257,8 +253,7 @@ App::MeasureElementType PartMeasureTypeCb(App::DocumentObject* ob, const char* s
                     if (!check.IsPlanar()) {
                         return App::MeasureElementType::SURFACE;
                     }
-                    return isDatum(subject) ? App::MeasureElementType::PLANE
-                                            : App::MeasureElementType::PLANESEGMENT;
+                    return App::MeasureElementType::PLANESEGMENT;
                 }
             }
         }
@@ -418,6 +413,18 @@ MeasureAreaInfoPtr MeasureAreaHandler(const App::SubObjectT& subject)
             subject.getElementName()
         );
         return std::make_shared<MeasureAreaInfo>(false, 0.0, Base::Matrix4D());
+    }
+
+    if (isDatum(subject)) {
+        return std::make_shared<MeasureAreaInfo>(
+            false,
+            0.0,
+            App::GeoFeature::getGlobalPlacement(
+                subject.getSubObjectList().back(),
+                subject.getObject(),
+                subject.getSubName()
+            )
+        );
     }
 
     TopAbs_ShapeEnum sType = shape.ShapeType();

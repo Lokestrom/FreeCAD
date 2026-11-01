@@ -14,6 +14,7 @@
 
 #include <App/Application.h>
 #include <App/Document.h>
+#include <App/Link.h>
 #include <App/MeasureManager.h>
 #include <Mod/Measure/App/MeasureAngle.h>
 #include <Mod/Measure/App/MeasureArea.h>
@@ -60,6 +61,18 @@ TEST_F(MeasureElementType, testUnboundedPlaneIsPlane)
     document->recompute();
 
     App::MeasureSelectionItem datum {App::SubObjectT {plane, ""}, Base::Vector3d {}};
+
+    EXPECT_EQ(App::MeasureManager::getMeasureElementType(datum), App::MeasureElementType::PLANE);
+}
+
+TEST_F(MeasureElementType, testLinkedUnboundedPlaneIsPlane)
+{
+    auto plane = document->addObject<Part::DatumPlane>("Plane");
+    auto link = document->addObject<App::Link>("Link");
+    link->setLink(-1, plane);
+    document->recompute();
+
+    App::MeasureSelectionItem datum {App::SubObjectT {link, ""}, Base::Vector3d {}};
 
     EXPECT_EQ(App::MeasureManager::getMeasureElementType(datum), App::MeasureElementType::PLANE);
 }
@@ -121,4 +134,18 @@ TEST_F(MeasureElementType, testPlaneMeasurementSupport)
     EXPECT_FALSE(Measure::MeasureArea::isValidSelection({datum1}));
     EXPECT_TRUE(Measure::MeasureAngle::isValidSelection({datum1, datum2}));
     EXPECT_TRUE(Measure::MeasureDistance::isValidSelection({datum1, datum2}));
+}
+
+TEST_F(MeasureElementType, testDatumAreaHandlerReturnsInvalidResult)
+{
+    auto plane = document->addObject<Part::DatumPlane>("Plane");
+    document->recompute();
+
+    App::SubObjectT datum {plane, ""};
+    auto handler = Measure::MeasureArea::getGeometryHandler("Part");
+    ASSERT_TRUE(handler);
+
+    auto result = handler(datum);
+    ASSERT_TRUE(result);
+    EXPECT_FALSE(result->valid);
 }
